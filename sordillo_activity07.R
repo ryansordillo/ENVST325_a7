@@ -84,6 +84,62 @@ predict.lm(mod.full, data.frame(airTemp=20,log.age=log(2),
            interval="prediction")
 
 
+##Question 3
+
+# Log-transform depth to reduce skew from very deep reservoirs
+ghg$log.depth <- log(ghg$mean.depth + 1)
+
+# - Adds HydroV (directly answers the policy question)
+# - Adds TropicalV (tropical reservoirs systematically higher CH4 - important given dataset composition)
+# - Uses log.depth instead of raw mean.depth
+
+mod.improved <- lm(log.ch4 ~ airTemp +
+                     log.age +
+                     log.depth +
+                     log.DIP +
+                     log.precip +
+                     BorealV +
+                     TropicalV +
+                     HydroV,
+                   data = ghg)
+
+summary(mod.improved)
+
+
+###Assumptions Check for improved model#####
+
+res.imp <- rstandard(mod.improved)
+fit.imp <- fitted.values(mod.improved)
+
+
+qqnorm(res.imp, pch = 19, col = "grey50", main = "Q-Q Plot: Improved Model")
+qqline(res.imp)
+shapiro.test(res.imp)
+
+plot(fit.imp, res.imp, pch = 19, col = "grey50",
+     xlab = "Fitted Values", ylab = "Standardized Residuals",
+     main = "Residuals vs Fitted: Improved Model")
+abline(h = 0)
+
+ols_vif_tol(mod.improved)
+
+imp.step <- ols_step_forward_aic(mod.improved)
+imp.step
+plot(imp.step)
+summary(imp.step$model)
+
+predict.lm(imp.step$model,
+           data.frame(airTemp    = 25,
+                      log.age    = log(2),
+                      log.depth  = log(16),
+                      log.DIP    = log(51),
+                      log.precip = log(1500),
+                      BorealV    = 0,
+                      TropicalV  = 1,
+                      HydroV     = 1),
+           interval = "prediction")
+
+
 
 
 
