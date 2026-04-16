@@ -99,8 +99,7 @@ mod.improved <- lm(log.ch4 ~ airTemp +
                      log.DIP +
                      log.precip +
                      BorealV +
-                     TropicalV +
-                     HydroV,
+                     TropicalV,
                    data = ghg)
 
 summary(mod.improved)
@@ -135,8 +134,8 @@ predict.lm(imp.step$model,
                       log.DIP    = log(51),
                       log.precip = log(1500),
                       BorealV    = 0,
-                      TropicalV  = 1,
-                      HydroV     = 1),
+                      TropicalV  = 1
+                      ),
            interval = "prediction")
 
 ######Start of Tutorial#######
@@ -232,6 +231,50 @@ ggplot() +
 
 
 #####Start of Homework#####
+
+#Transformation to CO2 flux
+
+ghg$transformed_co2 <- 1 / (ghg$co2 + 1000)
+
+sum(!is.na(ghg$co2))
+summary(ghg$co2)
+
+
+#Model for CO2
+names()
+
+mod.co2 <- lm(transformed_co2 ~ airTemp +
+                log.depth +
+                log.DIP +
+                log.precip +
+                BorealV +
+                TropicalV,
+              data=ghg)
+
+summary(mod.co2)
+
+##Checking OLS Assumptions for co2 model##
+
+res.imp <- rstandard(mod.co2)
+fit.imp <- fitted.values(mod.co2)
+
+
+qqnorm(res.imp, pch = 19, col = "grey50", main = "Q-Q Plot: CO2 Model")
+qqline(res.imp)
+shapiro.test(res.imp)
+
+plot(fit.imp, res.imp, pch = 19, col = "grey50",
+     xlab = "Fitted Values", ylab = "Standardized Residuals",
+     main = "Residuals vs Fitted: CO2")
+abline(h = 0)
+
+ols_vif_tol(mod.co2)
+
+imp.step <- ols_step_forward_aic(mod.co2)
+imp.step
+plot(imp.step)
+summary(imp.step$model)
+
 
 
 
