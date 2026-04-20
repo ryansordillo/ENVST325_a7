@@ -232,6 +232,17 @@ ggplot() +
 
 #####Start of Homework#####
 
+#1.
+'The authors of the reservoir greenhouse gas study recommend using the following transformation for
+ data:
+Use the transformation and design a multiple regression analysis to present to water managers about
+the impact of reservoir characteristics on carbon dioxide fluxes. In designing your regression, you
+should consider the environmental conditions that impact carbon dioxide fluxes, the availability of
+𝐶𝑂2
+1/(𝐶𝑂2 + 1000)
+data, and the assumptions of ordinary least squares regression. Report results using a regression
+table (format in a formal presentation), , and the sample size. Write a paragraph summary and
+interpretation of the findings that can be presented to water managers.'
 #Transformation to CO2 flux
 
 ghg$transformed_co2 <- 1 / (ghg$co2 + 1000)
@@ -241,14 +252,13 @@ summary(ghg$co2)
 
 
 #Model for CO2
-names()
+names(ghg)
 
-mod.co2 <- lm(transformed_co2 ~ airTemp +
-                log.depth +
-                log.DIP +
-                log.precip +
-                BorealV +
-                TropicalV,
+mod.co2 <- lm(transformed_co2 ~ log.precip +
+                BorealV+
+                log.DIP+
+                log.depth+
+                log.age,
               data=ghg)
 
 summary(mod.co2)
