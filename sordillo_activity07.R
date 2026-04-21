@@ -285,18 +285,159 @@ imp.step
 plot(imp.step)
 summary(imp.step$model)
 
+#3.
+'Decompose the evapotranspiration time series for almonds, pistachios, fallow/idle fields, corn, and
+table grapes. Evaluate differences in the observations, trends, and seasonality of the data between
+the different crops. Write a summary of your evaluation for a water manager that is interested in
+examining how irrigation can affect evapotranspiration. The manager also wants to understand what
+crops have the greatest water consumption, the timing of high water consumption, and if there are
+changes over time. Include plots of your decomposition.'
 
 
+# average fields for each month for almonds
+almond <- ETdat %>% # ET data
+  filter(crop == "Almonds") %>% # only use almond fields
+  group_by(date) %>% # calculate over each date
+  summarise(ET.in = mean(Ensemble.ET, na.rm=TRUE)) # average fields
+
+# average fields for each month for pistachios
+pistachio <- ETdat %>% # ET data
+  filter(crop == "Pistachios") %>% 
+  group_by(date) %>% # calculate over each date
+  summarise(ET.in = mean(Ensemble.ET, na.rm=TRUE)) # average fields
+
+# average fields for each month for fallow
+fallow <- ETdat %>% # ET data
+  filter(crop == "Fallow/Idle Cropland") %>% 
+  group_by(date) %>% # calculate over each date
+  summarise(ET.in = mean(Ensemble.ET, na.rm=TRUE)) # average fields
+
+# average fields for each month for corn
+corn <- ETdat %>% # ET data
+  filter(crop == "Corn") %>% # only use corn fields
+  group_by(date) %>% # calculate over each date
+  summarise(ET.in = mean(Ensemble.ET, na.rm=TRUE)) # average fields
+
+# average fields for each month for grapes
+grape <- ETdat %>% # ET data
+  filter(crop == "Grapes (Table/Raisin)") %>% 
+  group_by(date) %>% # calculate over each date
+  summarise(ET.in = mean(Ensemble.ET, na.rm=TRUE)) # average fields
+
+# Time Series
+
+almond_ts2 <- ts(almond$ET.in, # data
+                start = c(2016,1), #start year 2016, month 1
+                #first number is unit of time and second is observations within a unit
+                frequency= 12) # frequency of observations in a unit
+
+pistachio_ts <- ts(pistachio$ET.in, start = c(2016,1), frequency=12)
+fallow_ts <- ts(fallow$ET.in, start = c(2016,1), frequency=12)
+corn_ts <- ts(corn$ET.in, start = c(2016,1), frequency=12)
+grape_ts <- ts(grape$ET.in, start = c(2016,1), frequency=12)
+
+#Decompose TS
+almond_dec <- decompose(almond_ts2)
+pistachio_dec <- decompose(pistachio_ts)
+fallow_dec <- decompose(fallow_ts)
+corn_dec <- decompose(corn_ts)
+grape_dec <- decompose(grape_ts)
 
 
+plot(almond_dec, xlab="Year")
+title("Almonds ET Decomposition")
+
+plot(pistachio_dec, xlab="Year")
+title("Pistachios ET Decomposition")
+
+plot(fallow_dec, xlab="Year")
+title("Fallow/Idle ET Decomposition")
+
+plot(corn_dec, xlab="Year")
+title("Corn ET Decomposition")
+
+plot(grape_dec, xlab="Year")
+title("Table Grapes ET Decomposition")
 
 
+#4.
+'Design an autoregressive model for pistachios and fallow/idle fields. Forecast future
+evapotranspiration for each field so that water managers can include estimates in their planning.
+Make a plot that includes historical and forecasted evapotranspiration for the crops to present to the
+water manager. Include a brief explanation of your autoregressive models.
+'
 
+pistachio_y <- na.omit(pistachio_ts)
 
+p_model1 <- arima(pistachio_y , # data 
+                order = c(1,0,0)) # first number is AR order all other numbers get a 0 to keep AR format
 
+p_model4 <- arima(pistachio_y , # data 
+                order = c(4,0,0)) # first number is AR order all other numbers get a 0 to keep AR format
 
+AR_fitp1 <- pistachio_y - residuals(p_model1) 
+AR_fitp4 <- pistachio_y - residuals(p_model4)
 
+points(AR_fitp1, type = "l", col = "tomato3", lty = 2, lwd=2)
+points(AR_fitp4, type = "l", col = "darkgoldenrod4", lty = 2, lwd=2)
+legend("topleft", c("data","AR1","AR4"),
+       lty=c(1,2,2), lwd=c(1,2,2), 
+       col=c("black", "tomato3","darkgoldenrod4"),
+       bty="n")
 
+newPistachio <- forecast(p_model4)
 
+newPistachioF <- data.frame(newPistachio)
+years <- c(rep(2021,4),rep(2022,12), rep(2023,8))
+month <- c(seq(9,12),seq(1,12), seq(1,8))
+newPistachioF$dateF <- ymd(paste(years,"/",month,"/",1))
 
+#Make plot for pistachios including predictions
+ggplot() +
+  geom_line(data = pistachio, aes(x = ymd(date), y = ET.in))+
+  xlim(ymd(pistachio$date[1]),newPistachioF$dateF[24])+  # Plotting original data
+  geom_line(data = newPistachioF, aes(x = dateF, y = Point.Forecast),
+            col="red") +  # Plotting model forecasts
+  geom_ribbon(data=newPistachioF, 
+              aes(x=dateF,ymin=Lo.95,
+                  ymax=Hi.95), fill=rgb(0.5,0.5,0.5,0.5))+ # uncertainty interval
+  theme_classic()+
+  labs(x="year", y="Evapotranspiration (in)", title = "Pistachio AutoCorrelation Model")
 
+##Fallow
+fallow_y <- na.omit(fallow_ts)
+
+f_model1 <- arima(fallow_y , # data 
+                  order = c(1,0,0)) # first number is AR order all other numbers get a 0 to keep AR format
+
+f_model4 <- arima(fallow_y , # data 
+                  order = c(4,0,0)) # first number is AR order all other numbers get a 0 to keep AR format
+
+AR_fitf1 <- fallow_y - residuals(f_model1) 
+AR_fitf4 <- fallow_y - residuals(f_model4)
+
+points(AR_fitf1, type = "l", col = "tomato3", lty = 2, lwd=2)
+points(AR_fitf4, type = "l", col = "darkgoldenrod4", lty = 2, lwd=2)
+legend("topleft", c("data","AR1","AR4"),
+       lty=c(1,2,2), lwd=c(1,2,2), 
+       col=c("black", "tomato3","darkgoldenrod4"),
+       bty="n")
+
+newFallow <- forecast(f_model4)
+
+newFallowF <- data.frame(newFallow)
+years <- c(rep(2021,4),rep(2022,12), rep(2023,8))
+month <- c(seq(9,12),seq(1,12), seq(1,8))
+newFallowF$dateF <- ymd(paste(years,"/",month,"/",1))
+
+#Make plot for pistachios including predictions
+ggplot() +
+  geom_line(data = fallow, aes(x = ymd(date), y = ET.in))+
+  xlim(ymd(fallow$date[1]),newFallowF$dateF[24])+  # Plotting original data
+  geom_line(data = newFallowF, aes(x = dateF, y = Point.Forecast),
+            col="red") +  # Plotting model forecasts
+  geom_ribbon(data=newFallowF, 
+              aes(x=dateF,ymin=Lo.95,
+                  ymax=Hi.95), fill=rgb(0.5,0.5,0.5,0.5))+ # uncertainty interval
+  theme_classic()+
+  labs(x="year", y="Evapotranspiration (in)", title = "Fallow AutoCorrelation Model")
